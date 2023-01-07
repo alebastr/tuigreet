@@ -327,9 +327,9 @@ dependencies = [
 
 [[package]]
 name = "greetd_ipc"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80ef4898e4031d4a6133082ec838df029bfe33ae6c74a55c575e363576cc4cb7"
+checksum = "839390036de887ed0e6a58a82fc03619b27c96f24ac6425f7c9a6c397a6482f6"
 dependencies = [
  "async-trait",
  "serde",
