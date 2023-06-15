@@ -5,6 +5,7 @@ use tokio::sync::{
   mpsc::{Receiver, Sender},
   Mutex, RwLock,
 };
+use which::which;
 
 use crate::{
   info::{write_last_user_session, write_last_username},
@@ -118,19 +119,31 @@ impl Ipc {
           greeter.mode = Mode::Processing;
 
           let session = greeter.sessions.get(greeter.selected_session).filter(|s| &s.command == command);
-          let mut env: Vec<String> = vec![];
+          let mut cmd = vec![command.clone()];
+          let mut env = vec![];
+
           if let Some(Session { session_type, .. }) = session {
-            if session_type != &SessionType::None {
+            if *session_type != SessionType::None {
               env.push(format!("XDG_SESSION_TYPE={}", session_type.to_xdg_session_type()));
+            }
+
+            if *session_type == SessionType::X11 {
+              // `startx` wants an absolute path to the executable as a first argument
+              // `env` is a simplest noop command we can use to defer resolving the cmd until user
+              // shell environment is ready
+              if let Some(env_cmd) = which("env").ok().and_then(|c| c.to_str().map(|c| c.to_owned())) {
+                cmd.insert(0, env_cmd);
+                cmd.insert(0, "startx".to_owned());
+              }
             }
           }
 
           #[cfg(not(debug_assertions))]
-          self.send(Request::StartSession { cmd: vec![command.clone()], env }).await;
+          self.send(Request::StartSession { cmd, env }).await;
 
           #[cfg(debug_assertions)]
           {
-            let _ = command;
+            let _ = cmd;
             let _ = env;
 
             crate::exit(greeter, AuthStatus::Success).await;
